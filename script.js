@@ -1,63 +1,126 @@
-// IEFE
-(() => {
-    // state variables
-    let toDoListArray = [];
-    // ui variables
-    const form = document.querySelector(".form");
-    const input = form.querySelector(".form__input");
-    const ul = document.querySelector(".toDoList");
-  
-    // event listeners
-    form.addEventListener('submit', e => {
-      // prevent default behaviour - Page reload
-      e.preventDefault();
-      // give item a unique ID
-      let itemId = String(Date.now());
-      // get/assign input value
-      let toDoItem = input.value;
-      //pass ID and item into functions
-      addItemToDOM(itemId , toDoItem);
-      addItemToArray(itemId, toDoItem);
-      // clear the input box. (this is default behaviour but we got rid of that)
-      input.value = '';
-    });
-  
-    ul.addEventListener('click', e => {
-      let id = e.target.getAttribute('data-id')
-      if (!id) return // user clicked in something else
-      //pass id through to functions
-      removeItemFromDOM(id);
-      removeItemFromArray(id);
-    });
-  
-    // functions
-    function addItemToDOM(itemId, toDoItem) {
-      // create an li
-      const li = document.createElement('li')
-      li.setAttribute("data-id", itemId);
-      // add toDoItem text to li
-      li.innerText = toDoItem
-      // add li to the DOM
-      ul.appendChild(li);
+class Calculator {
+    constructor(previousOperandTextElement, currentOperandTextElement) {
+      this.previousOperandTextElement = previousOperandTextElement
+      this.currentOperandTextElement = currentOperandTextElement
+      this.clear()
     }
   
-    function addItemToArray(itemId, toDoItem) {
-      // add item to array as an object with an ID so we can find and delete it later
-      toDoListArray.push({ itemId, toDoItem});
-      console.log(toDoListArray)
+    clear() {
+      this.currentOperand = ''
+      this.previousOperand = ''
+      this.operation = undefined
     }
   
-    function removeItemFromDOM(id) {
-      // get the list item by data ID
-      var li = document.querySelector('[data-id="' + id + '"]');
-      // remove list item
-      ul.removeChild(li);
+    delete() {
+      this.currentOperand = this.currentOperand.toString().slice(0, -1)
     }
   
-    function removeItemFromArray(id) {
-      // create a new toDoListArray with all li's that don't match the ID
-      toDoListArray = toDoListArray.filter(item => item.itemId !== id);
-      console.log(toDoListArray);
+    appendNumber(number) {
+      if (number === '.' && this.currentOperand.includes('.')) return
+      this.currentOperand = this.currentOperand.toString() + number.toString()
     }
   
-  })();
+    chooseOperation(operation) {
+      if (this.currentOperand === '') return
+      if (this.previousOperand !== '') {
+        this.compute()
+      }
+      this.operation = operation
+      this.previousOperand = this.currentOperand
+      this.currentOperand = ''
+    }
+  
+    compute() {
+      let computation
+      const prev = parseFloat(this.previousOperand)
+      const current = parseFloat(this.currentOperand)
+      if (isNaN(prev) || isNaN(current)) return
+      switch (this.operation) {
+        case '+':
+          computation = prev + current
+          break
+        case '-':
+          computation = prev - current
+          break
+        case '*':
+          computation = prev * current
+          break
+        case '÷':
+          computation = prev / current
+          break
+        default:
+          return
+      }
+      this.currentOperand = computation
+      this.operation = undefined
+      this.previousOperand = ''
+    }
+  
+    getDisplayNumber(number) {
+      const stringNumber = number.toString()
+      const integerDigits = parseFloat(stringNumber.split('.')[0])
+      const decimalDigits = stringNumber.split('.')[1]
+      let integerDisplay
+      if (isNaN(integerDigits)) {
+        integerDisplay = ''
+      } else {
+        integerDisplay = integerDigits.toLocaleString('en', { maximumFractionDigits: 0 })
+      }
+      if (decimalDigits != null) {
+        return `${integerDisplay}.${decimalDigits}`
+      } else {
+        return integerDisplay
+      }
+    }
+  
+    updateDisplay() {
+      this.currentOperandTextElement.innerText =
+        this.getDisplayNumber(this.currentOperand)
+      if (this.operation != null) {
+        this.previousOperandTextElement.innerText =
+          `${this.getDisplayNumber(this.previousOperand)} ${this.operation}`
+      } else {
+        this.previousOperandTextElement.innerText = ''
+      }
+    }
+  }
+  
+  
+  const numberButtons = document.querySelectorAll('[data-number]')
+  const operationButtons = document.querySelectorAll('[data-operation]')
+  const equalsButton = document.querySelector('[data-equals]')
+  const deleteButton = document.querySelector('[data-delete]')
+  const allClearButton = document.querySelector('[data-all-clear]')
+  const previousOperandTextElement = document.querySelector('[data-previous-operand]')
+  const currentOperandTextElement = document.querySelector('[data-current-operand]')
+  
+  const calculator = new Calculator(previousOperandTextElement, currentOperandTextElement)
+  
+  numberButtons.forEach(button => {
+    button.addEventListener('click', () => {
+      calculator.appendNumber(button.innerText)
+      calculator.updateDisplay()
+    })
+  })
+  
+  operationButtons.forEach(button => {
+    button.addEventListener('click', () => {
+      calculator.chooseOperation(button.innerText)
+      calculator.updateDisplay()
+    })
+  })
+  
+  equalsButton.addEventListener('click', button => {
+    calculator.compute()
+    calculator.updateDisplay()
+  })
+  
+  allClearButton.addEventListener('click', button => {
+    calculator.clear()
+    calculator.updateDisplay()
+  })
+  
+  deleteButton.addEventListener('click', button => {
+    calculator.delete()
+    calculator.updateDisplay()
+  })
